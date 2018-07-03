@@ -49,25 +49,95 @@ void fun2Mat(MatrixXd &mat ,function<double(double)> & f)
 		 vec(i)=f();
 	 }
  }
- void  normal_Mat(MatrixXd &mat)
+
+struct data
+{
+	int lablel;
+	VectorXd image;
+};
+ 
+ class NetWork
  {
-	 	default_random_engine engine(time(0));
-		normal_distribution<> normal_rand(0,1);
-		for(int i=0;i<mat.rows();i++)
+public:
+	template< typename ... T>
+	 NetWork(  T ... nums)
+	 {
+		srand(time(0));
+		num_layers =sizeof...(nums);
+		sigmoid = [](double x)->double{ return 1/(1+exp(-x));};
+		sigmoid_prime=[](double x)->double{ return x*(1-x); };
+		init(nums...);
+	 }
+	 
+	 template<typename T ,typename ...Type>
+	 void init(T first ,T next , Type ...rest)
+	 {
+		 bias.push_back(VectorXd(next));
+		 weights.push_back(MatrixXd(next , first));
+		 init_normal(first , next);
+		 init(next ,rest...);
+	 }
+	template<typename T>
+	void init(T first ,T next)
+	{
+		bias.push_back(VectorXd(next));
+		weights.push_back(MatrixXd(next , first));
+		init_normal(first , next);
+	}
+	 
+	 void init_normal(int first ,int next)
+	 {
+		for(int i=0 ; i<next; i++)
 		{
-			for(int j=0;j<mat.cols();j++)
+			bias.back()(i)=normal_rand(engine);
+			for (int j=0 ; j<first ; j++)
 			{
-				mat(i,j)= normal_rand(engine) ;
+				weights.back()(i,j)=normal_rand(engine);
 			}
 		}
- }
-  void  normal_Mat(VectorXd &vec)
- {
-	 	default_random_engine engine;
-		normal_distribution<> normal_rand(0,1);
-			for(int i = 0; i < vec.size(); i++)
-		vec(i)= normal_rand(engine) ;
- }
+	}
+	 
+	 void feedforward(VectorXd & active)
+	 {
+		 for(int i=0 ; i<num_layers-1;i++)
+		 {
+			 VectorXd tmp=weights[i]*active;
+			 tmp =tmp +bias[i];
+			 fun2Mat(tmp  ,sigmoid);
+		 }
+	 }
+	 
+	 void SOD(vector<data> & training_data , int epochs ,int mini_batch_size ,double eta)
+	 {
+		 
+	 }
+	 
+	 void update_mini_batch(vector<data> & mini_batch, double eta)
+	 {
+		 
+	 }
+	 
+	void backprop(double x ,double y)
+	{
+		
+	}
+	
+	int evaluate()
+	{
+		return 0;
+	}
+	 
+public:
+	int num_layers;
+	default_random_engine engine;
+	normal_distribution<> normal_rand;
+	function<double(double)> sigmoid;
+	function<double(double)> sigmoid_prime;
+	 vector<MatrixXd> weights;
+	 vector<VectorXd> bias;
+ };
+ 
+ 
  
 class DeepLearn
 {
@@ -104,9 +174,6 @@ public:
 			delta=VectorXd::Zero(num);			
 			weight.resize(num,pre_num);
 			bias.resize(num);
-			normal_Mat(weight);
-			normal_Mat(bias);
-						
 		}
 		VectorXd layer;
 		MatrixXd weight;
@@ -136,8 +203,8 @@ public:
 
 
 	function<double()> lose_func;
-	VectorXd img;				
-	VectorXd lable;			
+	VectorXd img;				//图片
+	VectorXd lable;			//标签
 };
 
 bool  DeepLearn::init_data(char * img_path , char * lable_path )
@@ -205,7 +272,7 @@ bool DeepLearn::read_data(int i)
 }
 
 int main(int argc, char **argv)
-{
+{/*
 	DeepLearn dl({784,20,10});
 	dl.init_data("D:\\Work\\Learn\\train_images","D:\\Work\\Learn\\train_labels");
 	dl.read_data();
@@ -213,13 +280,41 @@ int main(int argc, char **argv)
 
 
 	dl.forward();
-	dl.backward();		
-
+	dl.backward();
+*/
+	ifstream f_lables("D:\\Work\\Learn\\train_labels",ios::binary | ios::in);
+	ifstream f_images("D:\\Work\\Learn\\train_images",ios::binary | ios::in);
+	
+	f_images.seekg(16,ios::beg);
+	f_lables.seekg(8,ios::beg);
+	
+	vector<data> training_data;
+	
+	VectorXd img_tmp=VectorXd::Zero(784);
+	int lable_tmp=0;
+	data tmp;
+	for(int j=0 ; j<1000 ; j++)
+	{
+		for(int i=0 ; i<784;i++)
+		{
+			img_tmp(i)=f_images.get();
+		}
+		lable_tmp=f_lables.get();	
+		tmp.image=img_tmp;
+		tmp.lablel=lable_tmp;
+		training_data.push_back(tmp);
+	}
+	
+	NetWork net(784,30,10);
+	cout.setf(ios::fixed);
 
 	
-//	cout <<setiosflags(ios::fixed)<<setprecision(8)<< dl.lose_func()<<endl;
-//	cout <<setiosflags(ios::fixed)<<setprecision(8)<< dl.Hide_Layers.back().layer<<endl;
-	
+	cout  <<net.bias[0] <<endl <<endl;
+	cout <<net.bias[1] <<endl <<endl;
+	cout <<net.weights[0] <<endl <<endl;
+	cout <<net.weights[1 ] <<endl <<endl;
+
 	return 0;
 }
+
 
